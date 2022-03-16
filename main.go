@@ -1,16 +1,43 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.com/gorilla/mux"
 )
 
+type Test struct {
+	Content string
+}
+
+func resumen(w http.ResponseWriter, r *http.Request) {
+
+	days := r.URL.Query().Get("days")
+	w.Header().Set("Content-Type", "aplication/json")
+
+	days_i, err := strconv.Atoi(days)
+	if err != nil {
+		fmt.Println(err)
+	}
+	resp := request(days_i)
+	response, _ := json.Marshal(resp)
+	results := string(response)
+
+	fmt.Fprintf(w, "%v", results)
+}
 func main() {
-	resp := request(5)
-	fmt.Println(resp)
+	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/resumen/2019-12-01", resumen)
+	http.ListenAndServe(":3001", router)
+
+	fmt.Println(router)
+
 }
 func request(len_list int) []map[int]interface{} {
 	var maps_i []map[int]interface{}
@@ -29,7 +56,7 @@ func request(len_list int) []map[int]interface{} {
 				list_res := strings.Split(res_b, "},{")
 				type mt map[int]interface{}
 				if len_list <= len(list_res) {
-					for index := 0; index <= len_list; index++ {
+					for index := 0; index < len_list; index++ {
 						i := list_res[index]
 						clean_text := strings.Replace(i, "{", "", -1)
 						clean_text = strings.Replace(clean_text, "}", "", -1)
